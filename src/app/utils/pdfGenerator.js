@@ -122,7 +122,7 @@ export const generateMeetingPDF = (data) => {
     ensureSpace(40);
     sectionTitle(doc, "ACTION ITEMS", yPos, margin, accentColor);
     yPos += 8;
-    
+
     const tableData = data.actionItems.map(item => [
       item.task || "",
       item.owner || "Unassigned",
@@ -174,7 +174,7 @@ export const generateMeetingPDF = (data) => {
     ensureSpace(40);
     sectionTitle(doc, "ANALYSIS & INSIGHTS", yPos, margin, secondaryColor);
     yPos += 10;
-    
+
     if (data.toneAnalysis) {
       ensureSpace(20);
       doc.setFont("helvetica", "bold");

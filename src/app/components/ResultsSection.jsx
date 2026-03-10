@@ -13,9 +13,11 @@ function TabButton({ id, label, icon, active, onClick }) {
     <button
       id={id}
       onClick={onClick}
+      className="max-sm:flex-1"
       style={{
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
         gap: "8px",
         padding: "10px 20px",
         borderRadius: "10px",
@@ -23,16 +25,26 @@ function TabButton({ id, label, icon, active, onClick }) {
         background: active
           ? "linear-gradient(135deg, rgba(108,99,255,0.2), rgba(167,139,250,0.15))"
           : "transparent",
-        borderBottom: active ? "none" : "none",
         color: active ? "var(--accent-secondary)" : "var(--text-muted)",
         fontSize: "14px",
         fontWeight: active ? "700" : "500",
         cursor: "pointer",
         transition: "all 0.25s ease",
         outline: active ? "1px solid rgba(108,99,255,0.25)" : "1px solid transparent",
+        whiteSpace: "nowrap",
       }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = "var(--text-secondary)"; }}
-      onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = "var(--text-muted)"; }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = "var(--text-secondary)";
+          e.currentTarget.style.background = "rgba(108,99,255,0.05)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.color = "var(--text-muted)";
+          e.currentTarget.style.background = "transparent";
+        }
+      }}
     >
       <span style={{ fontSize: "16px" }}>{icon}</span>
       {label}
@@ -65,11 +77,20 @@ export default function ResultsSection({ isVisible, result, onReset }) {
       style={{
         padding: "0 24px 100px",
         maxWidth: "900px",
-        margin: "0 auto",
+        margin: "120px auto 0",
       }}
     >
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "40px" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          marginBottom: "40px"
+        }}
+      >
         <div
           style={{
             display: "inline-flex",
@@ -161,21 +182,25 @@ export default function ResultsSection({ isVisible, result, onReset }) {
       </div>
 
       {/* Action buttons row */}
-      <div
+      <div 
         style={{
           display: "flex",
           gap: "12px",
           marginBottom: "28px",
+          marginTop: "24px",
           flexWrap: "wrap",
           justifyContent: "flex-end",
+          width: "100%"
         }}
       >
         <button
           id="download-pdf-btn"
           onClick={handleDownloadPdf}
+          className="max-sm:flex-1"
           style={{
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "8px",
             padding: "11px 22px",
             borderRadius: "12px",
@@ -201,9 +226,11 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         <button
           id="copy-summary-btn"
           onClick={() => handleCopy(data.summary)}
+          className="max-sm:flex-1"
           style={{
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "8px",
             padding: "11px 22px",
             borderRadius: "12px",
@@ -227,9 +254,11 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         <button
           id="new-meeting-btn"
           onClick={onReset}
+          className="max-sm:flex-1"
           style={{
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "8px",
             padding: "11px 22px",
             borderRadius: "12px",
@@ -252,16 +281,16 @@ export default function ResultsSection({ isVisible, result, onReset }) {
       </div>
 
       {/* Tab navigation */}
-      <div
+      <div 
         style={{
           display: "flex",
+          flexWrap: "wrap",
           gap: "6px",
           marginBottom: "24px",
           padding: "6px",
           background: "rgba(255,255,255,0.03)",
           borderRadius: "14px",
           border: "1px solid rgba(255,255,255,0.06)",
-          overflowX: "auto",
         }}
       >
         <TabButton id="tab-summary" label="Summary" icon="📝" active={activeTab === "summary"} onClick={() => setActiveTab("summary")} />

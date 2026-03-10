@@ -1,6 +1,24 @@
 @import "tailwindcss";
 
 :root {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --accent-primary: #4f46e5;
+  --accent-secondary: #6366f1;
+  --accent-glow: rgba(79, 70, 229, 0.15);
+  --accent-green: #10b981;
+  --accent-orange: #f59e0b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-subtle: rgba(79, 70, 229, 0.2);
+  --border-card: rgba(0, 0, 0, 0.08);
+  --gradient-hero: linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #f8fafc 100%);
+}
+
+.dark {
   --bg-primary: #0a0d16;
   --bg-secondary: #111420;
   --bg-card: #161b2e;
@@ -113,17 +131,25 @@ body {
 
 /* Glass morphism */
 .glass {
-  background: rgba(22, 27, 46, 0.7);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border-card);
 }
 
 .glass-strong {
-  background: rgba(22, 27, 46, 0.9);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--border-card);
+}
+
+.dark .glass {
+  background: rgba(22, 27, 46, 0.7);
+}
+
+.dark .glass-strong {
+  background: rgba(22, 27, 46, 0.9);
 }
 
 /* Gradient text */

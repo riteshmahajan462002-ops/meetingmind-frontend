@@ -77,7 +77,7 @@ export default function ProcessingView({ isVisible, onComplete }) {
       style={{
         padding: "0 24px 80px",
         maxWidth: "760px",
-        margin: "0 auto",
+        margin: "120px auto 0",
       }}
     >
       {/* Section label */}

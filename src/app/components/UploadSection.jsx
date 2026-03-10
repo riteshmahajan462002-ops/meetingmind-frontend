@@ -68,37 +68,31 @@ export default function UploadSection({ onFileSelect }) {
     >
       {/* Section label */}
       <div style={{ textAlign: "center", marginBottom: "40px" }}>
-        <div
+        <div 
+          className="inline-flex items-center gap-2 rounded-full font-bold tracking-widest uppercase"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 14px",
-            borderRadius: "100px",
-            background: "rgba(16, 217, 160, 0.1)",
-            border: "1px solid rgba(16, 217, 160, 0.2)",
-            marginBottom: "16px",
+            background: "var(--accent-glow)",
+            border: "1px solid var(--border-subtle)",
+            color: "var(--accent-primary)",
+            padding: "6px 16px",
             fontSize: "12px",
-            fontWeight: "700",
-            color: "#10d9a0",
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
+            marginBottom: "20px"
           }}
         >
           Step 1 of 3
         </div>
         <h2
+          className="font-extrabold tracking-tight"
           style={{
-            fontSize: "clamp(28px, 4vw, 42px)",
-            fontWeight: "800",
-            letterSpacing: "-1px",
+            color: "var(--text-primary)",
+            fontSize: "clamp(24px, 3.5vw, 36px)",
             marginBottom: "12px",
             lineHeight: "1.2",
           }}
         >
           Upload Your Recording
         </h2>
-        <p style={{ fontSize: "16px", color: "var(--text-secondary)", lineHeight: "1.6" }}>
+        <p className="leading-relaxed" style={{ fontSize: "15px", color: "var(--text-secondary)" }}>
           Supports MP3, WAV, M4A, OGG, FLAC and more. Max 2 GB.
         </p>
       </div>

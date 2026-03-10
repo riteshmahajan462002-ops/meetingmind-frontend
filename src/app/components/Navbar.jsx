@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -20,11 +20,9 @@ export default function Navbar() {
         zIndex: 100,
         padding: "0 24px",
         transition: "all 0.3s ease",
-        background: scrolled
-          ? "rgba(10, 13, 22, 0.9)"
-          : "transparent",
+        background: scrolled ? "var(--bg-primary)" : "transparent",
         backdropFilter: scrolled ? "blur(20px)" : "none",
-        borderBottom: scrolled ? "1px solid rgba(108, 99, 255, 0.12)" : "none",
+        borderBottom: scrolled ? "1px solid var(--border-subtle)" : "none",
       }}
     >
       <div
@@ -44,11 +42,11 @@ export default function Navbar() {
               width: "36px",
               height: "36px",
               borderRadius: "10px",
-              background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
+              background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              boxShadow: "0 4px 15px rgba(108,99,255,0.4)",
+              boxShadow: "0 4px 15px var(--accent-glow)",
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -61,7 +59,7 @@ export default function Navbar() {
               fontSize: "20px",
               fontWeight: "800",
               letterSpacing: "-0.5px",
-              background: "linear-gradient(135deg, #f0f4ff, #a78bfa)",
+              background: "linear-gradient(135deg, var(--text-primary), var(--accent-secondary))",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -73,8 +71,8 @@ export default function Navbar() {
 
         {/* Nav links */}
         <div
+          className="hidden md:flex"
           style={{
-            display: "flex",
             alignItems: "center",
             gap: "8px",
           }}
@@ -94,7 +92,7 @@ export default function Navbar() {
               }}
               onMouseEnter={(e) => {
                 e.target.style.color = "var(--text-primary)";
-                e.target.style.background = "rgba(108,99,255,0.08)";
+                e.target.style.background = "var(--accent-glow)";
               }}
               onMouseLeave={(e) => {
                 e.target.style.color = "var(--text-secondary)";
@@ -107,7 +105,7 @@ export default function Navbar() {
           <button
             style={{
               marginLeft: "8px",
-              background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
+              background: "linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))",
               color: "white",
               border: "none",
               padding: "9px 22px",
@@ -116,15 +114,15 @@ export default function Navbar() {
               fontWeight: "600",
               cursor: "pointer",
               transition: "all 0.3s ease",
-              boxShadow: "0 4px 20px rgba(108,99,255,0.3)",
+              boxShadow: "0 4px 20px var(--accent-glow)",
             }}
             onMouseEnter={(e) => {
               e.target.style.transform = "translateY(-2px)";
-              e.target.style.boxShadow = "0 8px 30px rgba(108,99,255,0.5)";
+              e.target.style.boxShadow = "0 8px 30px var(--accent-glow)";
             }}
             onMouseLeave={(e) => {
               e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 4px 20px rgba(108,99,255,0.3)";
+              e.target.style.boxShadow = "0 4px 20px var(--accent-glow)";
             }}
           >
             Get Started Free

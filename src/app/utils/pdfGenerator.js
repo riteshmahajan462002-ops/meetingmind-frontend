@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export const generateMeetingPDF = (data) => {
   const doc = new jsPDF();
@@ -130,7 +130,7 @@ export const generateMeetingPDF = (data) => {
       (item.priority || "Medium").toUpperCase()
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Task', 'Owner', 'Due Date', 'Priority']],
       body: tableData,
@@ -147,6 +147,8 @@ export const generateMeetingPDF = (data) => {
         yPos = data.cursor.y;
       }
     });
+    // Use doc.lastAutoTable to get the position if available, 
+    // though yPos is already updated in didDrawPage
     yPos = doc.lastAutoTable.finalY + 15;
   }
 

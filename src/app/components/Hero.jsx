@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useRef } from "react";
 
 function MicWave() {
   return (
@@ -141,9 +140,7 @@ export default function Hero({ onScrollToUpload }) {
           marginBottom: "48px",
         }}
       >
-        Upload your recorded meeting audio and let AI transcribe every word,
-        extract key decisions, action items, and generate a polished PDF summary
-        — in seconds.
+        Upload recorded audio for instant AI summaries or get live transcripts during meetings. Save time, capture every key point effortlessly
       </p>
 
       {/* CTA buttons */}

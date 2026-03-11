@@ -9,8 +9,7 @@ const inter = Inter({
 
 export const metadata = {
   title: "MeetingMind – AI Meeting Intelligence",
-  description:
-    "Upload your recorded meetings and get instant AI-powered transcriptions, smart summaries, key action points, and downloadable PDF reports.",
+  description: "Upload recorded audio for instant AI summaries or get live transcripts during meetings. Save time, capture every key point effortlessly",
   keywords: "meeting transcription, AI meeting notes, audio transcription, meeting summary",
 };
 

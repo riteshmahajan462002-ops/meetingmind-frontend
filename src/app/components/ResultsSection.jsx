@@ -52,11 +52,32 @@ function TabButton({ id, label, icon, active, onClick }) {
   );
 }
 
-export default function ResultsSection({ isVisible, result, onReset }) {
-  const [activeTab, setActiveTab] = useState("summary");
+// All available tabs in display order
+const ALL_TABS = [
+  { id: "summary", label: "Summary", icon: "📝", outputKey: "summary" },
+  { id: "actions", label: "Action Items", icon: "✅", outputKey: "action_items" },
+  { id: "decisions", label: "Decisions", icon: "💡", outputKey: "action_items" }, // always show with action_items
+  { id: "insights", label: "Insights", icon: "🔍", outputKey: "summary" },       // always show with summary
+  { id: "transcript", label: "Transcript", icon: "📃", outputKey: "transcript" },
+];
+
+export default function ResultsSection({ isVisible, result, onReset, selectedOutputs }) {
+  // Default: show everything if no filter provided
+  const activeOutputs = selectedOutputs && selectedOutputs.length > 0 ? selectedOutputs : ["summary", "action_items", "transcript", "pdf"];
+
+  // Determine which tabs to show
+  const visibleTabs = ALL_TABS.filter((tab) => activeOutputs.includes(tab.outputKey));
+  const showPdfButton = activeOutputs.includes("pdf");
+
+  // Default active tab = first visible tab
+  const defaultTab = visibleTabs.length > 0 ? visibleTabs[0].id : "summary";
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [copying, setCopying] = useState(false);
 
   if (!isVisible || !result) return null;
+
+  // Ensure activeTab is always valid (e.g. if selectedOutputs changed)
+  const resolvedTab = visibleTabs.find((t) => t.id === activeTab) ? activeTab : defaultTab;
 
   // Use real API result directly — no mock fallback
   const data = result;
@@ -75,7 +96,7 @@ export default function ResultsSection({ isVisible, result, onReset }) {
     <section
       id="results-section"
       style={{
-        padding: "0 24px 100px",
+        padding: "0 16px 80px",
         maxWidth: "900px",
         margin: "120px auto 0",
       }}
@@ -123,29 +144,7 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         >
           {data.title}
         </h2>
-        {/* conversationType pill */}
-        {data.conversationType && (
-          <div style={{ marginTop: "10px", marginBottom: "4px" }}>
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 14px",
-                borderRadius: "100px",
-                background: "rgba(108,99,255,0.1)",
-                border: "1px solid rgba(108,99,255,0.25)",
-                fontSize: "12px",
-                fontWeight: "700",
-                color: "#a78bfa",
-                letterSpacing: "0.05em",
-                textTransform: "uppercase",
-              }}
-            >
-              🎙️ {data.conversationType}
-            </span>
-          </div>
-        )}
+
         <div
           style={{
             display: "flex",
@@ -182,10 +181,10 @@ export default function ResultsSection({ isVisible, result, onReset }) {
       </div>
 
       {/* Action buttons row */}
-      <div 
+      <div
         style={{
           display: "flex",
-          gap: "12px",
+          gap: "10px",
           marginBottom: "28px",
           marginTop: "24px",
           flexWrap: "wrap",
@@ -193,36 +192,38 @@ export default function ResultsSection({ isVisible, result, onReset }) {
           width: "100%"
         }}
       >
-        <button
-          id="download-pdf-btn"
-          onClick={handleDownloadPdf}
-          className="max-sm:flex-1"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "8px",
-            padding: "11px 22px",
-            borderRadius: "12px",
-            background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
-            color: "white",
-            border: "none",
-            fontSize: "14px",
-            fontWeight: "700",
-            cursor: "pointer",
-            transition: "all 0.3s ease",
-            boxShadow: "0 6px 20px rgba(108,99,255,0.35)",
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 35px rgba(108,99,255,0.55)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(108,99,255,0.35)"; }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M21 15V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V15" stroke="white" strokeWidth="2" strokeLinecap="round" />
-            <path d="M7 10L12 15L17 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d="M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          Download PDF
-        </button>
+        {showPdfButton && (
+          <button
+            id="download-pdf-btn"
+            onClick={handleDownloadPdf}
+            className="max-sm:flex-1"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "8px",
+              padding: "11px 22px",
+              borderRadius: "12px",
+              background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
+              color: "white",
+              border: "none",
+              fontSize: "14px",
+              fontWeight: "700",
+              cursor: "pointer",
+              transition: "all 0.3s ease",
+              boxShadow: "0 6px 20px rgba(108,99,255,0.35)",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 12px 35px rgba(108,99,255,0.55)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(108,99,255,0.35)"; }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15V19C21 20.1 20.1 21 19 21H5C3.9 21 3 20.1 3 19V15" stroke="white" strokeWidth="2" strokeLinecap="round" />
+              <path d="M7 10L12 15L17 10" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M12 15V3" stroke="white" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            Download PDF
+          </button>
+        )}
         <button
           id="copy-summary-btn"
           onClick={() => handleCopy(data.summary)}
@@ -280,8 +281,8 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         </button>
       </div>
 
-      {/* Tab navigation */}
-      <div 
+      {/* Tab navigation — only show tabs for selected outputs */}
+      <div
         style={{
           display: "flex",
           flexWrap: "wrap",
@@ -293,11 +294,16 @@ export default function ResultsSection({ isVisible, result, onReset }) {
           border: "1px solid rgba(255,255,255,0.06)",
         }}
       >
-        <TabButton id="tab-summary" label="Summary" icon="📝" active={activeTab === "summary"} onClick={() => setActiveTab("summary")} />
-        <TabButton id="tab-actions" label="Action Items" icon="✅" active={activeTab === "actions"} onClick={() => setActiveTab("actions")} />
-        <TabButton id="tab-decisions" label="Decisions" icon="💡" active={activeTab === "decisions"} onClick={() => setActiveTab("decisions")} />
-        <TabButton id="tab-insights" label="Insights" icon="🔍" active={activeTab === "insights"} onClick={() => setActiveTab("insights")} />
-        <TabButton id="tab-transcript" label="Transcript" icon="📃" active={activeTab === "transcript"} onClick={() => setActiveTab("transcript")} />
+        {visibleTabs.map((tab) => (
+          <TabButton
+            key={tab.id}
+            id={`tab-${tab.id}`}
+            label={tab.label}
+            icon={tab.icon}
+            active={resolvedTab === tab.id}
+            onClick={() => setActiveTab(tab.id)}
+          />
+        ))}
       </div>
 
       {/* Tab content */}
@@ -306,14 +312,14 @@ export default function ResultsSection({ isVisible, result, onReset }) {
           background: "var(--bg-card)",
           border: "1px solid var(--border-card)",
           borderRadius: "20px",
-          padding: "32px",
+          padding: "20px",
           minHeight: "300px",
         }}
       >
         {/* SUMMARY TAB */}
-        {activeTab === "summary" && (
+        {resolvedTab === "summary" && (
           <div>
-            {/* Header row with sentiment badge */}
+            {/* Header row with conversation type + sentiment badges */}
             <div
               style={{
                 display: "flex",
@@ -333,13 +339,21 @@ export default function ResultsSection({ isVisible, result, onReset }) {
                   <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>Powered by advanced LLM analysis</div>
                 </div>
               </div>
-              {data.sentiment && (
-                <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 14px", borderRadius: "100px", background: "rgba(16,217,160,0.1)", border: "1px solid rgba(16,217,160,0.25)", fontSize: "12px", fontWeight: "700", color: "#10d9a0", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10d9a0", display: "inline-block" }} />
-                  {data.sentiment}
-                </span>
-              )}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                {data.conversationType && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 14px", borderRadius: "100px", background: "rgba(108,99,255,0.1)", border: "1px solid rgba(108,99,255,0.25)", fontSize: "12px", fontWeight: "700", color: "#a78bfa", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    🎙️ {data.conversationType}
+                  </span>
+                )}
+                {data.sentiment && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 14px", borderRadius: "100px", background: "rgba(16,217,160,0.1)", border: "1px solid rgba(16,217,160,0.25)", fontSize: "12px", fontWeight: "700", color: "#10d9a0", letterSpacing: "0.05em", textTransform: "uppercase" }}>
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10d9a0", display: "inline-block" }} />
+                    {data.sentiment}
+                  </span>
+                )}
+              </div>
             </div>
+
 
             {data.oneLineSummary && (
               <p style={{ fontSize: "14px", color: "var(--text-muted)", fontStyle: "italic", marginBottom: "16px", lineHeight: "1.6" }}>{data.oneLineSummary}</p>
@@ -414,7 +428,7 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         )}
 
         {/* INSIGHTS TAB */}
-        {activeTab === "insights" && (
+        {resolvedTab === "insights" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
 
             {/* Tone Analysis */}
@@ -498,73 +512,143 @@ export default function ResultsSection({ isVisible, result, onReset }) {
 
 
         {/* ACTION ITEMS TAB */}
-        {activeTab === "actions" && (
-          <div>
-            <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px solid var(--border-card)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(16,217,160,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>✅</div>
-                <div>
-                  <div style={{ fontSize: "16px", fontWeight: "700" }}>Action Items</div>
-                  <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{(data.actionItems || data.action_items || []).length} tasks identified</div>
+        {resolvedTab === "actions" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
+
+            {/* Task Cards */}
+            <div>
+              <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px solid var(--border-card)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(16,217,160,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "18px" }}>✅</div>
+                  <div>
+                    <div style={{ fontSize: "16px", fontWeight: "700" }}>Action Items</div>
+                    <div style={{ fontSize: "13px", color: "var(--text-muted)" }}>{(data.actionItems || data.action_items || []).length} tasks identified</div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-              {(data.actionItems || data.action_items || []).map((item, i) => {
-                // priority is optional — fall back to a neutral style
-                const p = PRIORITY_COLORS[item.priority] || {
-                  bg: "rgba(108,99,255,0.1)",
-                  border: "rgba(108,99,255,0.2)",
-                  text: "#a78bfa",
-                };
-                return (
-                  <div
-                    key={i}
-                    id={`action-item-${i}`}
-                    style={{
-                      display: "flex",
-                      gap: "14px",
-                      padding: "16px 18px",
-                      borderRadius: "14px",
-                      background: "rgba(0,0,0,0.15)",
-                      border: "1px solid var(--border-card)",
-                      transition: "all 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.04)"; e.currentTarget.style.borderColor = "rgba(108,99,255,0.15)"; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,0,0,0.15)"; e.currentTarget.style.borderColor = "var(--border-card)"; }}
-                  >
-                    <div style={{ width: "22px", height: "22px", borderRadius: "6px", border: "2px solid rgba(108,99,255,0.3)", flexShrink: 0, marginTop: "2px", cursor: "pointer" }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: "15px", fontWeight: "600", marginBottom: "6px", lineHeight: "1.4" }}>{item.task}</div>
-                      <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                        {item.owner && (
-                          <span style={{ fontSize: "13px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor" /><path d="M12 2V4M12 20V22M4.93 4.93L6.34 6.34M17.66 17.66L19.07 19.07M2 12H4M20 12H22M4.93 19.07L6.34 17.66M17.66 6.34L19.07 4.93" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                            {item.owner}
-                          </span>
-                        )}
-                        {item.due && (
-                          <span style={{ fontSize: "13px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
-                            {item.due}
-                          </span>
-                        )}
-                        {item.priority && (
-                          <span style={{ padding: "2px 10px", borderRadius: "100px", background: p.bg, border: `1px solid ${p.border}`, fontSize: "11px", fontWeight: "700", color: p.text, letterSpacing: "0.04em", textTransform: "uppercase" }}>
-                            {item.priority}
-                          </span>
-                        )}
+              {(data.actionItems || data.action_items || []).length === 0 ? (
+                <p style={{ fontSize: "14px", color: "var(--text-muted)", fontStyle: "italic" }}>No action items were identified for this conversation.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  {(data.actionItems || data.action_items || []).map((item, i) => {
+                    const p = PRIORITY_COLORS[(item.priority || "").toLowerCase()] || {
+                      bg: "rgba(108,99,255,0.1)",
+                      border: "rgba(108,99,255,0.2)",
+                      text: "#a78bfa",
+                    };
+                    return (
+                      <div
+                        key={i}
+                        id={`action-item-${i}`}
+                        style={{
+                          display: "flex",
+                          gap: "14px",
+                          padding: "16px 18px",
+                          borderRadius: "14px",
+                          background: "rgba(0,0,0,0.15)",
+                          border: "1px solid var(--border-card)",
+                          transition: "all 0.2s ease",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.04)"; e.currentTarget.style.borderColor = "rgba(108,99,255,0.15)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(0,0,0,0.15)"; e.currentTarget.style.borderColor = "var(--border-card)"; }}
+                      >
+                        <div style={{ width: "22px", height: "22px", borderRadius: "6px", border: "2px solid rgba(108,99,255,0.3)", flexShrink: 0, marginTop: "2px" }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: "15px", fontWeight: "600", marginBottom: "6px", lineHeight: "1.4" }}>{item.task}</div>
+                          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                            {item.owner && (
+                              <span style={{ fontSize: "13px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="2" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                                {item.owner}
+                              </span>
+                            )}
+                            {item.due && (
+                              <span style={{ fontSize: "13px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" /><path d="M16 2V6M8 2V6M3 10H21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                                {item.due}
+                              </span>
+                            )}
+                            {item.priority && (
+                              <span style={{ padding: "2px 10px", borderRadius: "100px", background: p.bg, border: `1px solid ${p.border}`, fontSize: "11px", fontWeight: "700", color: p.text, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                                {item.priority}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
+
+            {/* Decisions Made */}
+            {(data.decisions || []).length > 0 && (
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "14px" }}>
+                  💡 Decisions Made
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {(data.decisions || []).map((decision, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: "flex",
+                        gap: "16px",
+                        padding: "16px 18px",
+                        borderRadius: "14px",
+                        background: "rgba(249,115,22,0.05)",
+                        border: "1px solid rgba(249,115,22,0.12)",
+                      }}
+                    >
+                      <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: "rgba(249,115,22,0.15)", border: "1px solid rgba(249,115,22,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: "800", color: "#f97316", flexShrink: 0 }}>
+                        {i + 1}
+                      </div>
+                      <span style={{ fontSize: "15px", lineHeight: "1.6", color: "var(--text-primary)", fontWeight: "500" }}>
+                        {typeof decision === "object" ? JSON.stringify(decision) : decision}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Next Steps */}
+            {data.nextSteps && (
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "14px" }}>
+                  🚀 Next Steps
+                </div>
+                <div style={{ display: "flex", gap: "14px", padding: "18px 20px", borderRadius: "14px", background: "rgba(16,217,160,0.05)", border: "1px solid rgba(16,217,160,0.15)" }}>
+                  <span style={{ fontSize: "20px", flexShrink: 0 }}>➡️</span>
+                  <p style={{ fontSize: "15px", lineHeight: "1.7", color: "var(--text-secondary)", margin: 0 }}>{data.nextSteps}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Follow-Up Questions */}
+            {(data.followUpQuestions || []).length > 0 && (
+              <div>
+                <div style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "14px" }}>
+                  ❓ Follow-Up Questions
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {(data.followUpQuestions || []).map((q, i) => (
+                    <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start", padding: "14px 16px", borderRadius: "12px", background: "rgba(108,99,255,0.05)", border: "1px solid rgba(108,99,255,0.12)" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "800", color: "#a78bfa", flexShrink: 0, marginTop: "1px" }}>{i + 1}.</span>
+                      <span style={{ fontSize: "14px", lineHeight: "1.6", color: "var(--text-secondary)" }}>{q}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </div>
         )}
 
+
         {/* KEY DECISIONS TAB */}
-        {activeTab === "decisions" && (
+        {resolvedTab === "decisions" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
 
             {/* Decisions */}
@@ -682,7 +766,7 @@ export default function ResultsSection({ isVisible, result, onReset }) {
         )}
 
         {/* TRANSCRIPT TAB */}
-        {activeTab === "transcript" && (
+        {resolvedTab === "transcript" && (
           <div>
             <div style={{ marginBottom: "20px", paddingBottom: "20px", borderBottom: "1px solid var(--border-card)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

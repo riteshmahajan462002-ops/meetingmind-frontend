@@ -76,6 +76,9 @@ export default function Home() {
       // ── Step 1: Transcribe ────────────────────────────────────────────────
       const formData = new FormData();
       formData.append("audio", file, "recording.webm");
+      // Pass config options so the backend can respect user preferences
+      formData.append("language", config.language);
+      formData.append("speakerDiarization", String(config.speakerDiarization));
 
       // ⚠️ Do NOT set Content-Type header — browser sets it automatically with boundary
       const transcribeRes = await fetch("http://localhost:5000/api/transcribe", {
@@ -94,7 +97,12 @@ export default function Home() {
       const summarizeRes = await fetch("http://localhost:5000/api/summarize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transcript: transcribeData.data.transcript }),
+        body: JSON.stringify({
+          transcript: transcribeData.data.transcript,
+          language: config.language,
+          summaryLength: config.summaryLength,
+          selectedOutputs: config.selectedOutputs,
+        }),
       });
 
       if (!summarizeRes.ok) {
@@ -221,7 +229,7 @@ export default function Home() {
                 <ConfigSection disabled={!file} onConfig={setConfig} />
               </>
             ) : (
-              <div className=" flex  align-center justify-center items-center mx-auto px-6">
+              <div className="flex justify-center items-start w-full px-4 sm:px-6">
                 <LiveTranscription />
               </div>
             )}
@@ -248,7 +256,7 @@ export default function Home() {
         />
 
         {/* Results */}
-        <ResultsSection isVisible={showResults} result={result} onReset={handleReset} />
+        <ResultsSection isVisible={showResults} result={result} onReset={handleReset} selectedOutputs={config.selectedOutputs} />
 
         {/* Footer */}
         {!showProcessing && <Footer />}

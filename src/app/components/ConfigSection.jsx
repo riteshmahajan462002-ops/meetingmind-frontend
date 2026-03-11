@@ -119,7 +119,7 @@ export default function ConfigSection({ onConfig, disabled }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* Language + Diarization row */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "16px" }}>
           {/* Language */}
           <div
             style={{
@@ -264,7 +264,7 @@ export default function ConfigSection({ onConfig, disabled }) {
           >
             📦 Output Options
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px" }}>
             {outputOptions.map((opt) => {
               const selected = selectedOutputs.includes(opt.id);
               return (
@@ -337,7 +337,7 @@ export default function ConfigSection({ onConfig, disabled }) {
           >
             📏 Summary Detail Level
           </label>
-          <div style={{ display: "flex", gap: "10px" }}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {[
               { id: "brief", label: "Brief", desc: "~1 paragraph" },
               { id: "medium", label: "Balanced", desc: "~3 paragraphs" },

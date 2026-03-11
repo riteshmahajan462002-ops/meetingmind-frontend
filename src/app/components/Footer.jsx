@@ -1,7 +1,13 @@
 
 export default function Footer() {
   return (
-    <footer className="py-8 px-6 text-center">
+    <footer
+      className="px-6 text-center"
+      style={{
+        paddingTop: "48px",
+        paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
+      }}
+    >
       <div className="flex items-center justify-center gap-2 mb-3">
         <div className="w-[26px] h-[26px] rounded-md bg-linear-to-br from-(--accent-primary) to-(--accent-secondary) flex items-center justify-center">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none">

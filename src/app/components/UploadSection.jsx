@@ -1,7 +1,6 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 
-const ACCEPTED_FORMATS = ["audio/mp3", "audio/mpeg", "audio/wav", "audio/x-wav", "audio/ogg", "audio/mp4", "audio/m4a", "audio/webm", "video/mp4", "video/webm"];
 const ACCEPTED_EXTENSIONS = [".mp3", ".wav", ".m4a", ".ogg", ".mp4", ".webm", ".flac", ".aac"];
 
 function formatBytes(bytes) {
@@ -27,7 +26,6 @@ export default function UploadSection({ onFileSelect }) {
     setFile(selectedFile);
     onFileSelect?.(selectedFile);
 
-    // Try to get audio duration
     const url = URL.createObjectURL(selectedFile);
     const audio = new Audio(url);
     audio.onloadedmetadata = () => {
@@ -68,7 +66,7 @@ export default function UploadSection({ onFileSelect }) {
     >
       {/* Section label */}
       <div style={{ textAlign: "center", marginBottom: "40px" }}>
-        <div 
+        <div
           className="inline-flex items-center gap-2 rounded-full font-bold tracking-widest uppercase"
           style={{
             background: "var(--accent-glow)",

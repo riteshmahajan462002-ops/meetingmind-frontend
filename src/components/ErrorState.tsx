@@ -1,6 +1,11 @@
 import React from 'react';
 
-export default function ErrorState({ errorMsg, handleReset }) {
+interface ErrorStateProps {
+  errorMsg: string;
+  onReset: () => void;
+}
+
+export default function ErrorState({ errorMsg, onReset }: ErrorStateProps) {
   let displayError = errorMsg;
   try {
     if (typeof errorMsg === 'string' && errorMsg.startsWith('{')) {
@@ -82,7 +87,7 @@ export default function ErrorState({ errorMsg, handleReset }) {
           {displayError || "An unexpected error occurred while processing your file. Please try again."}
         </p>
         <button
-          onClick={handleReset}
+          onClick={onReset}
           style={{
             display: "inline-flex",
             alignItems: "center",

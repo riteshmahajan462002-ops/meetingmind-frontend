@@ -1,17 +1,17 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const generateMeetingPDF = (data) => {
+export const generateMeetingPDF = (data: any) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
   const contentWidth = pageWidth - 2 * margin;
 
   // Colors
-  const accentColor = [108, 99, 255]; // #6c63ff
-  const secondaryColor = [167, 139, 250]; // #a78bfa
-  const textColor = [45, 55, 72]; // Dark slate
-  const mutedColor = [113, 128, 150]; // Gray
+  const accentColor: [number, number, number] = [108, 99, 255]; // #6c63ff
+  const secondaryColor: [number, number, number] = [167, 139, 250]; // #a78bfa
+  const textColor: [number, number, number] = [45, 55, 72]; // Dark slate
+  const mutedColor: [number, number, number] = [113, 128, 150]; // Gray
 
   let yPos = 25;
 
@@ -53,7 +53,7 @@ export const generateMeetingPDF = (data) => {
 
   // Footer on all pages
   const addFooter = () => {
-    const pageCount = doc.internal.getNumberOfPages();
+    const pageCount = (doc.internal as any).getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -67,7 +67,7 @@ export const generateMeetingPDF = (data) => {
     }
   };
 
-  const ensureSpace = (needed) => {
+  const ensureSpace = (needed: number) => {
     if (yPos + needed > doc.internal.pageSize.getHeight() - 20) {
       doc.addPage();
       yPos = 20;
@@ -143,13 +143,13 @@ export const generateMeetingPDF = (data) => {
         2: { cellWidth: 30 },
         3: { cellWidth: 25 }
       },
-      didDrawPage: (data) => {
+      didDrawPage: (data: any) => {
         yPos = data.cursor.y;
       }
     });
     // Use doc.lastAutoTable to get the position if available, 
     // though yPos is already updated in didDrawPage
-    yPos = doc.lastAutoTable.finalY + 15;
+    yPos = (doc as any).lastAutoTable.finalY + 15;
   }
 
   // 5. Decisions
@@ -233,7 +233,7 @@ export const generateMeetingPDF = (data) => {
 };
 
 // Helper to draw section titles
-function sectionTitle(doc, text, y, margin, color) {
+function sectionTitle(doc: jsPDF, text: string, y: number, margin: number, color: [number, number, number]) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...color);

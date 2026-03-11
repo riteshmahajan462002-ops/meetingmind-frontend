@@ -47,112 +47,51 @@ const FEATURES = [
 
 export default function FeaturesSection() {
   return (
-    <section
-      id="features-section"
-      style={{
-        padding: "80px 24px",
-        maxWidth: "1100px",
-        margin: "0 auto",
-      }}
-    >
-      <div style={{ textAlign: "center", marginBottom: "60px" }}>
-        <h2
-          style={{
-            fontSize: "clamp(32px, 5vw, 52px)",
-            fontWeight: "900",
-            letterSpacing: "-1.5px",
-            marginBottom: "16px",
-            lineHeight: "1.1",
-          }}
-        >
+    <section id="features-section" className="py-20 px-6 max-w-[1100px] mx-auto">
+      <div className="text-center mb-16">
+        <h2 className="text-[clamp(32px,5vw,52px)] font-black tracking-[-1.5px] mb-4 leading-[1.1]">
           Everything You Need From a{" "}
-          <span
-            style={{
-              background: "linear-gradient(135deg, #6c63ff, #a78bfa)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}
-          >
+          <span className="bg-gradient-to-br from-[#6c63ff] to-[#a78bfa] bg-clip-text text-transparent">
             Meeting
           </span>
         </h2>
-        <p
-          style={{
-            fontSize: "18px",
-            color: "var(--text-secondary)",
-            maxWidth: "520px",
-            margin: "0 auto",
-            lineHeight: "1.7",
-          }}
-        >
+        <p className="text-lg text-[var(--text-secondary)] max-w-[520px] mx-auto leading-[1.7]">
           Stop taking notes. Let AI handle the details so you can focus on what matters.
         </p>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: "20px",
-        }}
-      >
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-5">
         {FEATURES.map((feature, i) => (
           <div
             key={feature.title}
             id={`feature-${i}`}
+            className="rounded-[20px] p-7 transition-all duration-300 cursor-default hover:-translate-y-1.5"
             style={{
               background: feature.gradient,
               border: `1px solid ${feature.color}22`,
-              borderRadius: "20px",
-              padding: "28px",
-              transition: "all 0.3s ease",
-              cursor: "default",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-6px)";
               e.currentTarget.style.boxShadow = `0 24px 60px ${feature.color}20`;
               e.currentTarget.style.borderColor = `${feature.color}44`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0)";
               e.currentTarget.style.boxShadow = "none";
               e.currentTarget.style.borderColor = `${feature.color}22`;
             }}
           >
             <div
+              className="w-[52px] h-[52px] rounded-xl flex items-center justify-center text-[26px] mb-4"
               style={{
-                width: "52px",
-                height: "52px",
-                borderRadius: "14px",
                 background: `${feature.color}18`,
                 border: `1px solid ${feature.color}30`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "26px",
-                marginBottom: "18px",
               }}
             >
               {feature.icon}
             </div>
-            <h3
-              style={{
-                fontSize: "17px",
-                fontWeight: "700",
-                marginBottom: "10px",
-                color: "var(--text-primary)",
-              }}
-            >
+            <h3 className="text-[17px] font-bold mb-2.5 text-[var(--text-primary)]">
               {feature.title}
             </h3>
-            <p
-              style={{
-                fontSize: "14px",
-                color: "var(--text-secondary)",
-                lineHeight: "1.65",
-              }}
-            >
+            <p className="text-[14px] text-[var(--text-secondary)] leading-[1.65]">
               {feature.desc}
             </p>
           </div>

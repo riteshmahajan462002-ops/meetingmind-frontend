@@ -1,56 +1,17 @@
 "use client";
+
+import { getSocket } from "@/lib/socket";
+import { CorrectedTranscript, FinalLine, PartialLine, RealtimeRecorderReturn, Segment } from "@/types/live.transcription";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
 
-// ── Socket singleton ──────────────────────────────────────────
-let socket: Socket | null = null;
-
-function getSocket(): Socket {
-    if (!socket) {
-        socket = io("http://localhost:5000", {
-            transports: ["websocket"],
-            autoConnect: false,
-        });
-    }
-    return socket;
-}
-
-// ── Types ─────────────────────────────────────────────────────
-interface Segment {
-    speaker: string;
-    text: string;
-}
-
-interface FinalLine {
-    text: string;
-    speaker: string | null;
-    segments: Segment[];
-}
-
-interface PartialLine {
-    text: string;
-    speaker: string | null;
-}
-
-// NEW: what comes back from the async diarization layer
-interface CorrectedTranscript {
-    segments: Segment[];      // [{ speaker: "Speaker 0", text: "..." }, ...]
-    transcript: string;       // full formatted string "Speaker 0: ...\nSpeaker 1: ..."
-    speakerCount: number;     // how many unique speakers Gladia detected
-}
-
-// ── Hook ──────────────────────────────────────────────────────
-export function useRealtimeRecorder() {
+export function useRealtimeRecorder(): RealtimeRecorderReturn {
     const [isRecording, setIsRecording] = useState<boolean>(false);
     const [sessionId, setSessionId] = useState<string | null>(null);
     const [partialText, setPartialText] = useState<PartialLine | null>(null);
     const [finalLines, setFinalLines] = useState<FinalLine[]>([]);
     const [fullTranscript, setFullTranscript] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
-
-    // NEW: accurate diarized transcript arrives ~15–30s after session stops
     const [correctedTranscript, setCorrectedTranscript] = useState<CorrectedTranscript | null>(null);
-    // NEW: true while we're waiting for the async diarization result
     const [isDiarizing, setIsDiarizing] = useState<boolean>(false);
 
     const audioContextRef = useRef<AudioContext | null>(null);
@@ -59,7 +20,6 @@ export function useRealtimeRecorder() {
     const isRecordingRef = useRef<boolean>(false);
     const sessionIdRef = useRef<string | null>(null);
 
-    // Cleanup listeners on unmount
     useEffect(() => {
         return () => {
             const s = getSocket();
@@ -68,19 +28,18 @@ export function useRealtimeRecorder() {
             s.off("transcript-final");
             s.off("session-stopped");
             s.off("session-error");
-            s.off("transcript-corrected"); // NEW
+            s.off("transcript-corrected");
         };
     }, []);
 
-    const startRecording = useCallback(async () => {
-        // ── Reset all state ──────────────────────────────────
+    const startRecording = useCallback(async (): Promise<void> => {
         setError(null);
         setFinalLines([]);
         setPartialText(null);
         setFullTranscript("");
         setSessionId(null);
-        setCorrectedTranscript(null); // NEW
-        setIsDiarizing(false);        // NEW
+        setCorrectedTranscript(null);
+        setIsDiarizing(false);
         sessionIdRef.current = null;
         isRecordingRef.current = true;
 
@@ -94,15 +53,14 @@ export function useRealtimeRecorder() {
 
         s.connect();
         await new Promise<void>((resolve) => s.once("connect", resolve));
-        console.log("✅ Socket connected:", s.id);
 
-        // ── Register socket listeners ─────────────────────────
+        // Register socket listeners
         s.off("session-started");
         s.off("transcript-partial");
         s.off("transcript-final");
         s.off("session-stopped");
         s.off("session-error");
-        s.off("transcript-corrected"); // NEW
+        s.off("transcript-corrected");
 
         s.on("transcript-partial", ({ text, speaker }: { text: string; speaker: string | null }) => {
             console.log("📝 Partial:", speaker, text);
@@ -114,7 +72,6 @@ export function useRealtimeRecorder() {
             speaker: string | null;
             segments: Segment[];
         }) => {
-            console.log("✅ Final:", segments ?? [{ speaker, text }]);
             setFinalLines((prev) => [
                 ...prev,
                 {
@@ -127,41 +84,28 @@ export function useRealtimeRecorder() {
         });
 
         s.on("session-stopped", ({ transcript }: { transcript: string }) => {
-            console.log("⏹ Stopped, length:", transcript?.length);
             setFullTranscript(transcript || "");
-            // NEW: session stopped → async diarization is now running on the backend
             setIsDiarizing(true);
         });
 
-        // NEW ─────────────────────────────────────────────────
-        // Fires ~15–30s after session stops with accurate speaker labels.
-        // speakerCount tells you exactly how many people Gladia detected.
         s.on("transcript-corrected", ({
             segments,
             transcript,
             speakerCount,
         }: CorrectedTranscript) => {
-            console.log(`✅ Corrected transcript ready — ${speakerCount} speaker(s) detected`);
-            console.log("🎙 Corrected segments:", segments);
-
             setCorrectedTranscript({ segments, transcript, speakerCount });
             setIsDiarizing(false);
         });
-        // ─────────────────────────────────────────────────────
 
         s.on("session-error", ({ message }: { message: string }) => {
-            console.error("❌ Error:", message);
             setError(message);
             setIsRecording(false);
-            setIsDiarizing(false); // NEW: clear on error too
+            setIsDiarizing(false);
             isRecordingRef.current = false;
         });
 
-        // Tell backend to create session
         s.emit("start-session");
-        console.log("📤 Emitted start-session, waiting for Gladia...");
 
-        // ── Wait for Gladia to be fully ready ─────────────────
         await new Promise<void>((resolve, reject) => {
             const timeout = setTimeout(() => {
                 reject(new Error("Gladia connection timeout — try again"));
@@ -169,7 +113,6 @@ export function useRealtimeRecorder() {
 
             s.once("session-started", ({ sessionId }: { sessionId: string }) => {
                 clearTimeout(timeout);
-                console.log("✅ Gladia ready, session:", sessionId);
                 setSessionId(sessionId);
                 sessionIdRef.current = sessionId;
                 resolve(undefined);
@@ -181,7 +124,6 @@ export function useRealtimeRecorder() {
             });
         });
 
-        // ── Start mic — Gladia is ready ───────────────────────
         try {
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
@@ -195,7 +137,6 @@ export function useRealtimeRecorder() {
             });
 
             streamRef.current = stream;
-            console.log("✅ Mic access granted");
 
             const audioContext = new AudioContext({ sampleRate: 16000 });
             audioContextRef.current = audioContext;
@@ -211,9 +152,7 @@ export function useRealtimeRecorder() {
 
             worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
                 if (!isRecordingRef.current) return;
-
                 s.emit("audio-chunk", e.data);
-
                 chunkCount++;
                 if (chunkCount % 20 === 0) {
                     console.log(`🎙 Sent ${chunkCount} chunks`);
@@ -224,8 +163,6 @@ export function useRealtimeRecorder() {
             worklet.connect(audioContext.destination);
 
             setIsRecording(true);
-            console.log("🎙 Recording started — AudioWorklet active");
-
         } catch (err: unknown) {
             const e = err as Error;
             const msg = e.message || "Microphone error";
@@ -260,8 +197,6 @@ export function useRealtimeRecorder() {
 
         getSocket().emit("stop-session");
         setIsRecording(false);
-        // NOTE: isDiarizing is set to true inside the "session-stopped" listener,
-        // not here — because it only starts once the backend confirms it stopped.
     }, []);
 
     return {
@@ -274,8 +209,7 @@ export function useRealtimeRecorder() {
         error,
         startRecording,
         stopRecording,
-        // NEW exports:
-        correctedTranscript,  // null until async diarization finishes
-        isDiarizing,          // true while waiting for corrected transcript
-    };
+        correctedTranscript,
+        isDiarizing,
+    } as RealtimeRecorderReturn;
 }

@@ -2,6 +2,7 @@
 import { ALL_TABS } from "@/utils/constant";
 import { useState } from "react";
 import { generateMeetingPDF } from "../utils/pdfGenerator";
+import { MeetingActionItem, MeetingResult } from "@/types";
 
 const PRIORITY_COLORS = {
   high: { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.2)", text: "#ef4444" },
@@ -9,7 +10,54 @@ const PRIORITY_COLORS = {
   low: { bg: "rgba(16,217,160,0.1)", border: "rgba(16,217,160,0.2)", text: "#10d9a0" },
 };
 
-function TabButton({ id, label, icon, active, onClick }) {
+type SelectedOutput = "summary" | "action_items" | "transcript" | "pdf";
+type RichTextValue = string | Record<string, unknown>;
+
+interface ResultsData extends Omit<MeetingResult, "decisions" | "keyMetrics" | "risks"> {
+  decisions: RichTextValue[];
+  keyMetrics: RichTextValue[];
+  risks: RichTextValue[];
+  action_items?: MeetingActionItem[];
+  keyDecisions?: RichTextValue[];
+  key_decisions?: RichTextValue[];
+  transcriptExcerpt?: string;
+  transcript_excerpt?: string;
+}
+
+interface TabButtonProps {
+  id: string;
+  label: string;
+  icon: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+interface ResultsSectionProps {
+  isVisible: boolean;
+  result: ResultsData | null;
+  onReset: () => void;
+  selectedOutputs?: SelectedOutput[];
+}
+
+const readRecordText = (value: unknown): string | undefined => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  return undefined;
+};
+
+const renderRichText = (value: RichTextValue): string => {
+  if (typeof value === "string") return value;
+  return readRecordText(value.text) ?? readRecordText(value.description) ?? JSON.stringify(value);
+};
+
+const renderMetric = (metric: RichTextValue): string => {
+  if (typeof metric === "string") return metric;
+  const metricValue = readRecordText(metric.value) ?? readRecordText(metric.metric) ?? "N/A";
+  const label = readRecordText(metric.label);
+  return label ? `${metricValue} ${label}` : metricValue;
+};
+
+function TabButton({ id, label, icon, active, onClick }: TabButtonProps) {
   return (
     <button
       id={id}
@@ -25,7 +73,7 @@ function TabButton({ id, label, icon, active, onClick }) {
 // All available tabs in display order
 
 
-export default function ResultsSection({ isVisible, result, onReset, selectedOutputs }) {
+export default function ResultsSection({ isVisible, result, onReset, selectedOutputs }: ResultsSectionProps) {
   // Default: show everything if no filter provided
   const activeOutputs = selectedOutputs && selectedOutputs.length > 0 ? selectedOutputs : ["summary", "action_items", "transcript", "pdf"];
 
@@ -47,14 +95,20 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
   // Use real API result directly — no mock fallback
   const data = result;
 
-  const handleCopy = async (text) => {
+  const handleCopy = async (text: string) => {
     await navigator.clipboard.writeText(text);
     setCopying(true);
     setTimeout(() => setCopying(false), 2000);
   };
 
   const handleDownloadPdf = () => {
-    generateMeetingPDF(data);
+    const pdfData: MeetingResult = {
+      ...data,
+      decisions: data.decisions.map(renderRichText),
+      risks: data.risks.map(renderRichText),
+      keyMetrics: data.keyMetrics.map(renderMetric),
+    };
+    generateMeetingPDF(pdfData);
   };
 
   return (
@@ -295,7 +349,7 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
                 <div className="flex flex-wrap gap-2.5">
                   {data.keyMetrics.map((metric, i) => (
                     <span key={i} className="px-4 py-2 rounded-xl bg-[rgba(108,99,255,0.07)] border border-[rgba(108,99,255,0.15)] text-[14px] font-semibold text-[var(--accent-secondary)]">
-                      {typeof metric === "object" ? (metric.value ?? metric.metric) + (metric.label ? ` ${metric.label}` : "") : metric}
+                      {renderMetric(metric)}
                     </span>
                   ))}
                 </div>
@@ -310,7 +364,7 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
                   {data.risks.map((risk, i) => (
                     <div key={i} className="flex gap-3 px-4 py-3.5 rounded-xl bg-[rgba(239,68,68,0.05)] border border-[rgba(239,68,68,0.15)]">
                       <span className="text-[16px] shrink-0">🔴</span>
-                      <span className="text-[14px] leading-[1.6] text-[var(--text-secondary)]">{typeof risk === "object" ? risk.description ?? JSON.stringify(risk) : risk}</span>
+                      <span className="text-[14px] leading-[1.6] text-[var(--text-secondary)]">{renderRichText(risk)}</span>
                     </div>
                   ))}
                 </div>
@@ -342,11 +396,14 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
               ) : (
                 <div className="flex flex-col gap-3">
                   {(data.actionItems || data.action_items || []).map((item, i) => {
-                    const p = PRIORITY_COLORS[(item.priority || "").toLowerCase()] || {
+                    const priorityKey = (item.priority || "").toLowerCase();
+                    const p = (priorityKey in PRIORITY_COLORS
+                      ? PRIORITY_COLORS[priorityKey as keyof typeof PRIORITY_COLORS]
+                      : {
                       bg: "rgba(108,99,255,0.1)",
                       border: "rgba(108,99,255,0.2)",
                       text: "#a78bfa",
-                    };
+                    });
                     return (
                       <div
                         key={i}
@@ -464,7 +521,7 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
                         {i + 1}
                       </div>
                       <span className="text-[15px] leading-[1.6] text-[var(--text-primary)] font-medium">
-                        {decision}
+                        {renderRichText(decision)}
                       </span>
                     </div>
                   ))
@@ -485,10 +542,10 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
                       className="px-[18px] py-4 rounded-[14px] bg-[rgba(108,99,255,0.07)] border border-[rgba(108,99,255,0.15)] text-center"
                     >
                       <div className="text-[22px] font-extrabold text-[var(--accent-secondary)] mb-1">
-                        {typeof metric === "object" ? metric.value ?? metric.metric : metric}
+                        {renderMetric(metric).split(" ")[0]}
                       </div>
-                      {typeof metric === "object" && metric.label && (
-                        <div className="text-[12px] text-[var(--text-muted)] font-semibold">{metric.label}</div>
+                      {typeof metric === "object" && readRecordText(metric.label) && (
+                        <div className="text-[12px] text-[var(--text-muted)] font-semibold">{readRecordText(metric.label)}</div>
                       )}
                     </div>
                   ))}
@@ -510,7 +567,7 @@ export default function ResultsSection({ isVisible, result, onReset, selectedOut
                     >
                       <span className="text-[16px] shrink-0">🔴</span>
                       <span className="text-[14px] leading-[1.6] text-[var(--text-secondary)]">
-                        {typeof risk === "object" ? risk.description ?? JSON.stringify(risk) : risk}
+                        {renderRichText(risk)}
                       </span>
                     </div>
                   ))}

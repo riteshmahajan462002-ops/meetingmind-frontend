@@ -2,7 +2,7 @@ import { getSpeakerColor } from "@/utils/helper";
 import { ArrowRight } from "lucide-react";
 import { FC } from "react";
 
-const SpeakerLine: FC<{ speaker?: string; text: string; isfinal?: boolean }> = ({
+const SpeakerLine: FC<{ speaker?: string | null; text: string; isfinal?: boolean }> = ({
     speaker,
     text,
     isfinal = false,

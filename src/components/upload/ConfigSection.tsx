@@ -128,18 +128,21 @@ const ConfigSection: FC<ConfigSectionProps> = ({ config, onConfig, disabled = fa
                   key={opt.id}
                   onClick={() => toggleOutput(opt.id)}
                   id={`output-${opt.id}`}
+                  type="button"
                   className={`
-                    p-[14px_16px] rounded-xl cursor-pointer text-left transition-all duration-300 flex items-start gap-3 hover:[&_.bg-hover]:bg-purple-500/5
+                    p-[14px_16px] rounded-xl cursor-pointer text-left transition-all duration-300 flex items-start gap-3 border
                     ${selected
-                      ? `bg-[rgba(108,99,255,0.12)] border-[${opt.color}44]`
+                      ? "bg-[rgba(108,99,255,0.12)]"
                       : "bg-black/15 border-border-card hover:bg-purple-500/5"
                     }
                   `}
-                  onMouseEnter={(e) => { if (!selected) e.currentTarget.classList.add('group-hover'); }}
+                  style={selected ? { borderColor: `${opt.color}44` } : undefined}
                 >
                   <div>
-                    <div className={`text-sm font-bold mb-1 transition-colors duration-300 ${selected ? `text-[${opt.color}]` : "text-text-secondary"
-                      }`}>
+                    <div
+                      className={`text-sm font-bold mb-1 transition-colors duration-300 ${selected ? "" : "text-text-secondary"}`}
+                      style={selected ? { color: opt.color } : undefined}
+                    >
                       {opt.label}
                       {selected && <span className="ml-2 text-xs opacity-80">✓</span>}
                     </div>

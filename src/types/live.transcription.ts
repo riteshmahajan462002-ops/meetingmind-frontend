@@ -1,21 +1,16 @@
 export interface Segment {
-    speaker?: string;
+    speaker?: string | null;
     text: string;
 }
 
 export interface TranscriptLine {
-    speaker?: string;
+    speaker?: string | null;
     text: string;
     segments?: Segment[];
 }
 
-export interface CorrectedTranscript {
-    segments: Segment[];
-    speakerCount: number;
-}
-
 export interface LiveTranscriptionProps {
-    onSummaryGenerated?: (summary: any) => void;
+    onSummaryGenerated?: (summary: RawSummaryResponse) => void;
 }
 
 

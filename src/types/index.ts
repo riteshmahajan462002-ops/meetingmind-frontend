@@ -1,5 +1,12 @@
 export type Stage = "idle" | "ready" | "processing" | "done" | "error";
 
+export interface MeetingActionItem {
+    task: string;
+    owner?: string;
+    due?: string;
+    priority?: string;
+}
+
 export interface Config {
     language: string;
     speakerDiarization: boolean;
@@ -17,7 +24,7 @@ export interface MeetingResult {
     mainTopics: string[];
     keyPoints: string[];
     decisions: string[];
-    actionItems: Array<{ description: string; assignee?: string }>;
+    actionItems: MeetingActionItem[];
     keyMetrics: (string | Record<string, unknown>)[];
     risks: string[];
     sentiment: string;

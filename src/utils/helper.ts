@@ -14,7 +14,7 @@ export const formatDuration = (seconds: number): string => {
     return `${m}:${s.toString().padStart(2, "0")}`;
 };
 
-export const getSpeakerColor = (speaker?: string): string => {
+export const getSpeakerColor = (speaker?: string | null): string => {
     if (!speaker) return "#a1a1aa";
     const num = parseInt(speaker.replace(/\D/g, ""), 10);
     return SPEAKER_COLORS[isNaN(num) ? 0 : num % SPEAKER_COLORS.length];
@@ -23,61 +23,30 @@ export const getSpeakerColor = (speaker?: string): string => {
 const isNonEmptyString = (value: unknown): value is string =>
     typeof value === 'string' && value.trim().length > 0;
 
-const isActionItemObject = (item: unknown): item is { description: string; assignee?: string } =>
-    typeof item === 'object' && item !== null && 'description' in item && isNonEmptyString((item as any).description);
-
-const isTextObject = (item: unknown): item is { text: string; assignee?: unknown } =>
-    typeof item === 'object' && item !== null && 'text' in item && isNonEmptyString((item as any).text);
-
-const isContentObject = (item: unknown): item is { content: string; owner?: unknown } =>
-    typeof item === 'object' && item !== null && 'content' in item && isNonEmptyString((item as any).content);
-
-const isTaskObject = (item: unknown): item is { task: string } =>
-    typeof item === 'object' && item !== null && 'task' in item && isNonEmptyString((item as any).task);
-
-const normalizeActionItems = (rawItems: unknown): MeetingResult["actionItems"] => {
+export const normalizeActionItems = (rawItems: unknown): MeetingResult["actionItems"] => {
     // Guard: null, undefined, non-array
     if (!Array.isArray(rawItems)) return [];
 
     return rawItems
         .map((item): MeetingResult["actionItems"][number] | null => {
-            if (isActionItemObject(item)) {
-                return {
-                    description: item.description,
-                    assignee: item.assignee || undefined,
-                };
-            }
-
             if (isNonEmptyString(item)) {
-                return { description: item };
-            }
-
-            if (isTextObject(item)) {
-                return {
-                    description: item.text,
-                    assignee: typeof item.assignee === 'string' ? item.assignee : undefined,
-                };
-            }
-
-            if (isContentObject(item)) {
-                return {
-                    description: item.content,
-                    assignee: typeof item.owner === 'string' ? item.owner : undefined,
-                };
-            }
-
-            if (isTaskObject(item)) {
-                return { description: item.task };
+                return { task: item };
             }
 
             if (typeof item === 'object' && item !== null) {
-                const possibleText = (item as Record<string, unknown>).text
-                    ?? (item as Record<string, unknown>).content
-                    ?? (item as Record<string, unknown>).task
-                    ?? String(item).trim();
+                const obj = item as Record<string, unknown>;
+                const possibleTask = obj.task ?? obj.description ?? obj.text ?? obj.content;
+                const possibleOwner = obj.owner ?? obj.assignee;
+                const possibleDue = obj.due ?? obj.deadline;
+                const possiblePriority = obj.priority;
 
-                if (isNonEmptyString(possibleText)) {
-                    return { description: possibleText };
+                if (isNonEmptyString(possibleTask)) {
+                    return {
+                        task: possibleTask.trim(),
+                        owner: isNonEmptyString(possibleOwner) ? possibleOwner : undefined,
+                        due: isNonEmptyString(possibleDue) ? possibleDue : undefined,
+                        priority: isNonEmptyString(possiblePriority) ? possiblePriority : undefined,
+                    };
                 }
             }
 

@@ -2,7 +2,7 @@
 
 import { useRealtimeRecorder } from "@/hooks/useRealtimeRecorder";
 import { generateSummary } from "@/lib/api";
-import { LiveTranscriptionProps, RealtimeRecorderReturn, Segment, TranscriptLine } from "@/types/live.transcription";
+import { FinalLine, LiveTranscriptionProps, RealtimeRecorderReturn, Segment } from "@/types/live.transcription";
 import { getSpeakerColor } from "@/utils/helper";
 import { ArrowRight } from "lucide-react";
 import { FC, useCallback, useState } from "react";
@@ -10,15 +10,14 @@ import SpeakerLine from "./SpeakerLine";
 
 
 const LiveTranscription: FC<LiveTranscriptionProps> = ({ onSummaryGenerated }) => {
-    const [summary, setSummary] = useState<any>(null);
     const [loading, setLoading] = useState(false);
+    const [summaryError, setSummaryError] = useState<string | null>(null);
 
     const {
         isRecording,
         sessionId,
         partialText,
         finalLines,
-        fullTranscript,
         error,
         startRecording,
         stopRecording,
@@ -28,13 +27,14 @@ const LiveTranscription: FC<LiveTranscriptionProps> = ({ onSummaryGenerated }) =
 
     const handleSummary = useCallback(async () => {
         if (!sessionId) return;
+        setSummaryError(null);
         setLoading(true);
         try {
             const result = await generateSummary(sessionId);
-            setSummary(result);
             onSummaryGenerated?.(result);
-        } catch (err: any) {
-            alert("Summary failed: " + err.message);
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Summary generation failed.";
+            setSummaryError(message);
         } finally {
             setLoading(false);
         }
@@ -45,6 +45,11 @@ const LiveTranscription: FC<LiveTranscriptionProps> = ({ onSummaryGenerated }) =
             {error && (
                 <div className="bg-red-500/10 border border-red-500/40 text-red-400 p-4 px-5 rounded-xl mb-6 flex items-center gap-3 text-[15px]">
                     <span className="text-[20px]">⚠️</span> {error}
+                </div>
+            )}
+            {summaryError && (
+                <div className="bg-red-500/10 border border-red-500/40 text-red-400 p-4 px-5 rounded-xl mb-6 flex items-center gap-3 text-[15px]">
+                    <span className="text-[20px]">!</span> {summaryError}
                 </div>
             )}
 
@@ -97,7 +102,7 @@ const LiveTranscription: FC<LiveTranscriptionProps> = ({ onSummaryGenerated }) =
 
                 <div className="font-mono text-[15px] leading-[1.8]">
                     {/* Final confirmed lines */}
-                    {finalLines.map((line: TranscriptLine, i: number) => {
+                    {finalLines.map((line: FinalLine, i: number) => {
                         if (line.segments && line.segments.length > 0) {
                             return (
                                 <div key={i} className="mb-3">
@@ -185,3 +190,4 @@ const LiveTranscription: FC<LiveTranscriptionProps> = ({ onSummaryGenerated }) =
 };
 
 export default LiveTranscription;
+

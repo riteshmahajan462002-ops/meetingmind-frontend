@@ -1,4 +1,3 @@
-
 export default function Footer() {
   return (
     <footer
@@ -19,8 +18,8 @@ export default function Footer() {
           MeetingMind
         </span>
       </div>
-      <p className="text-[13px] text-(--text-muted)">
-        © 2026 MeetingMind · AI Meeting Intelligence · Built with Next.js
+      <p className="text-[13px] text-[var(--text-muted)]">
+        (c) 2026 MeetingMind | AI Meeting Intelligence | Built with Next.js
       </p>
     </footer>
   );

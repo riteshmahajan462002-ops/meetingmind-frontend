@@ -15,7 +15,7 @@ import UploadSection from "@/components/upload/UploadSection";
 import { summarizeTranscript, transcribeAudio } from "@/lib/api";
 import { Config, MeetingResult, Stage } from "@/types";
 import { FileWithPath } from "@/types/file";
-import { createMeetingResult } from "@/utils/helper";
+import { createMeetingResult, normalizeActionItems } from "@/utils/helper";
 import { useCallback, useRef, useState, useTransition } from "react";
 
 
@@ -84,57 +84,59 @@ export default function HomePage() {
     setStage("processing");
 
     try {
-      startTransition(async () => {
-        const transcribeData = await transcribeAudio(
-          file,
-          config.language,
-          config.speakerDiarization
-        );
+      const transcribeData = await transcribeAudio(
+        file,
+        config.language,
+        config.speakerDiarization
+      );
 
-        const summarizeData = await summarizeTranscript(
-          transcribeData.data.transcript,
-          config.language,
-          config.summaryLength,
-          config.selectedOutputs
-        );
+      const summarizeData = await summarizeTranscript(
+        transcribeData.data.transcript,
+        config.language,
+        config.summaryLength,
+        config.selectedOutputs
+      );
 
-        const mergedResult: MeetingResult = {
-          title: summarizeData.data?.title ||
-            transcribeData.data?.title ||
-            file.name,
-          date: new Date().toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-          conversationType: summarizeData.data?.conversationType ?? "",
-          oneLineSummary: summarizeData.data?.oneLineSummary ?? "",
-          summary: summarizeData.data?.fullSummary ?? summarizeData.data?.summary ?? "",
-          speakers: summarizeData.data?.participants ?? transcribeData.data?.speakers ?? [],
-          mainTopics: summarizeData.data?.mainTopics ?? [],
-          keyPoints: summarizeData.data?.keyPoints ?? [],
-          decisions: summarizeData.data?.decisions ?? summarizeData.data?.keyDecisions ?? [],
-          actionItems: summarizeData.data?.actionItems ?? summarizeData.data?.action_items ?? [],
-          keyMetrics: summarizeData.data?.keyMetrics ?? [],
-          risks: summarizeData.data?.risks ?? [],
-          sentiment: summarizeData.data?.sentiment ?? "",
-          toneAnalysis: summarizeData.data?.toneAnalysis ?? "",
-          insights: summarizeData.data?.insights ?? [],
-          nextSteps: summarizeData.data?.nextSteps ?? "",
-          followUpQuestions: summarizeData.data?.followUpQuestions ?? [],
-          tags: summarizeData.data?.tags ?? [],
-          pdf_url: summarizeData.data?.pdf_url ?? summarizeData.data?.pdfUrl ?? null,
-          transcript: transcribeData.data?.transcript ?? "",
-          duration: transcribeData.data?.duration ?? "",
-        };
+      const mergedResult: MeetingResult = {
+        title: summarizeData.data?.title ||
+          transcribeData.data?.title ||
+          file.name,
+        date: new Date().toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }),
+        conversationType: summarizeData.data?.conversationType ?? "",
+        oneLineSummary: summarizeData.data?.oneLineSummary ?? "",
+        summary: summarizeData.data?.fullSummary ?? summarizeData.data?.summary ?? "",
+        speakers: summarizeData.data?.participants ?? transcribeData.data?.speakers ?? [],
+        mainTopics: summarizeData.data?.mainTopics ?? [],
+        keyPoints: summarizeData.data?.keyPoints ?? [],
+        decisions: summarizeData.data?.decisions ?? summarizeData.data?.keyDecisions ?? [],
+        actionItems: normalizeActionItems(
+          summarizeData.data?.actionItems ?? summarizeData.data?.action_items
+        ),
+        keyMetrics: summarizeData.data?.keyMetrics ?? [],
+        risks: summarizeData.data?.risks ?? [],
+        sentiment: summarizeData.data?.sentiment ?? "",
+        toneAnalysis: summarizeData.data?.toneAnalysis ?? "",
+        insights: summarizeData.data?.insights ?? [],
+        nextSteps: summarizeData.data?.nextSteps ?? "",
+        followUpQuestions: summarizeData.data?.followUpQuestions ?? [],
+        tags: summarizeData.data?.tags ?? [],
+        pdf_url: summarizeData.data?.pdf_url ?? summarizeData.data?.pdfUrl ?? null,
+        transcript: transcribeData.data?.transcript ?? "",
+        duration: transcribeData.data?.duration ?? "",
+      };
 
-        resultRef.current = mergedResult;
-        apiDoneRef.current = true;
+      resultRef.current = mergedResult;
+      apiDoneRef.current = true;
 
-        if (animDoneRef.current) {
+      if (animDoneRef.current) {
+        startTransition(() => {
           transitionToDone(mergedResult);
-        }
-      });
+        });
+      }
     } catch (err: unknown) {
       const error = err as Error;
       console.error("Processing error:", error);

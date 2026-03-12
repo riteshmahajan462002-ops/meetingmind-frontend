@@ -1,5 +1,6 @@
 import { FileWithPath } from "./file";
 import { Config, MeetingResult } from "./index";
+import { RawSummaryResponse } from "./live.transcription";
 
 export interface UploadWorkflowProps {
     uploadRef: React.RefObject<HTMLDivElement>;
@@ -11,7 +12,7 @@ export interface UploadWorkflowProps {
     showLanding: boolean;
     handleFileSelect: (file: FileWithPath | null) => void;
     onProcess: () => void;
-    onSummaryGenerated: (result: any) => void;
+    onSummaryGenerated: (result: RawSummaryResponse) => void;
     transitionToDone: (result: MeetingResult) => void;
     setConfig: React.Dispatch<React.SetStateAction<Config>>;
 }

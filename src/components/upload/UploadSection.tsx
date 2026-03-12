@@ -1,7 +1,7 @@
 "use client";
 
 import { FileWithPath } from "@/types/file";
-import { ACCEPTED_EXTENSIONS } from "@/utils/constant";
+import { ACCEPTED_EXTENSIONS, ACCEPTED_MIME_TYPES, MAX_UPLOAD_SIZE_BYTES } from "@/utils/constant";
 import { formatBytes, formatDuration } from "@/utils/helper";
 import { FC, useCallback, useRef, useState } from "react";
 import DurationIcon from "../icons/DurationIcon";
@@ -18,10 +18,42 @@ const UploadSection: FC<UploadSectionProps> = ({ onFileSelect }) => {
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState<FileWithPath | null>(null);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const validateFile = useCallback((selectedFile: File): string | null => {
+    const fileName = selectedFile.name.toLowerCase();
+    const ext = fileName.includes(".") ? `.${fileName.split(".").pop()}` : "";
+    const mimeType = selectedFile.type.toLowerCase();
+
+    if (selectedFile.size > MAX_UPLOAD_SIZE_BYTES) {
+      return "File is too large. Maximum allowed size is 2 GB.";
+    }
+
+    if (!ACCEPTED_EXTENSIONS.includes(ext)) {
+      return `Unsupported file extension "${ext || "unknown"}". Please upload one of: ${ACCEPTED_EXTENSIONS.join(", ")}.`;
+    }
+
+    if (mimeType && !ACCEPTED_MIME_TYPES.includes(mimeType as (typeof ACCEPTED_MIME_TYPES)[number])) {
+      return `Unsupported file type "${mimeType}". Please upload a valid audio/video recording file.`;
+    }
+
+    return null;
+  }, []);
 
   const handleFile = useCallback((selectedFile: File | null) => {
     if (!selectedFile) return;
+    const error = validateFile(selectedFile);
+    if (error) {
+      setValidationError(error);
+      setFile(null);
+      setAudioDuration(null);
+      onFileSelect?.(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setValidationError(null);
     const fileWithPath = selectedFile as FileWithPath;
     setFile(fileWithPath);
     onFileSelect?.(fileWithPath);
@@ -32,7 +64,11 @@ const UploadSection: FC<UploadSectionProps> = ({ onFileSelect }) => {
       setAudioDuration(audio.duration);
       URL.revokeObjectURL(url);
     };
-  }, [onFileSelect]);
+    audio.onerror = () => {
+      setAudioDuration(null);
+      URL.revokeObjectURL(url);
+    };
+  }, [onFileSelect, validateFile]);
 
   const onDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -51,6 +87,7 @@ const UploadSection: FC<UploadSectionProps> = ({ onFileSelect }) => {
   const removeFile = useCallback(() => {
     setFile(null);
     setAudioDuration(null);
+    setValidationError(null);
     onFileSelect?.(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }, [onFileSelect]);
@@ -160,6 +197,12 @@ const UploadSection: FC<UploadSectionProps> = ({ onFileSelect }) => {
             </button>
           </div>
         </div>
+      )}
+
+      {validationError && (
+        <p className="mt-4 text-[13px] leading-relaxed text-red-500 text-center">
+          {validationError}
+        </p>
       )}
 
       <input

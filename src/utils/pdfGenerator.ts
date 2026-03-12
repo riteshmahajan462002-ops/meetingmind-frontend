@@ -1,7 +1,14 @@
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTable, { HookData } from "jspdf-autotable";
+import { MeetingResult } from "@/types";
 
-export const generateMeetingPDF = (data: any) => {
+type AutoTableCapableDoc = jsPDF & {
+  lastAutoTable?: {
+    finalY: number;
+  };
+};
+
+export const generateMeetingPDF = (data: MeetingResult) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -53,7 +60,7 @@ export const generateMeetingPDF = (data: any) => {
 
   // Footer on all pages
   const addFooter = () => {
-    const pageCount = (doc.internal as any).getNumberOfPages();
+    const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
@@ -143,13 +150,14 @@ export const generateMeetingPDF = (data: any) => {
         2: { cellWidth: 30 },
         3: { cellWidth: 25 }
       },
-      didDrawPage: (data: any) => {
-        yPos = data.cursor.y;
+      didDrawPage: (hookData: HookData) => {
+        if (hookData.cursor) {
+          yPos = hookData.cursor.y;
+        }
       }
     });
-    // Use doc.lastAutoTable to get the position if available, 
-    // though yPos is already updated in didDrawPage
-    yPos = (doc as any).lastAutoTable.finalY + 15;
+    const tableFinalY = (doc as AutoTableCapableDoc).lastAutoTable?.finalY;
+    yPos = (tableFinalY ?? yPos) + 15;
   }
 
   // 5. Decisions
@@ -197,7 +205,7 @@ export const generateMeetingPDF = (data: any) => {
       doc.text("Strategic Observations:", margin, yPos);
       yPos += 8;
       data.insights.forEach(insight => {
-        const splitInsight = doc.splitTextToSize(`• ${insight}`, contentWidth);
+        const splitInsight = doc.splitTextToSize(`- ${insight}`, contentWidth);
         ensureSpace(splitInsight.length * 5 + 4);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...textColor);
@@ -214,8 +222,7 @@ export const generateMeetingPDF = (data: any) => {
     sectionTitle(doc, "POTENTIAL RISKS", yPos, margin, [239, 68, 68]); // Red
     yPos += 10;
     data.risks.forEach(risk => {
-      const riskText = typeof risk === 'object' ? (risk.description || JSON.stringify(risk)) : risk;
-      const splitRisk = doc.splitTextToSize(riskText, contentWidth - 8);
+      const splitRisk = doc.splitTextToSize(risk, contentWidth - 8);
       ensureSpace(splitRisk.length * 5 + 5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(239, 68, 68);
@@ -242,3 +249,4 @@ function sectionTitle(doc: jsPDF, text: string, y: number, margin: number, color
   doc.setLineWidth(0.4);
   doc.line(margin, y + 1.5, margin + 25, y + 1.5);
 }
+

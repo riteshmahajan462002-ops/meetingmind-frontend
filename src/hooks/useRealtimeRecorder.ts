@@ -1,8 +1,22 @@
 "use client";
 
-import { getSocket } from "@/lib/socket";
+import { disconnectSocket, getExistingSocket, getSocket } from "@/lib/socket";
 import { CorrectedTranscript, FinalLine, PartialLine, RealtimeRecorderReturn, Segment } from "@/types/live.transcription";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Socket } from "socket.io-client";
+
+const SOCKET_EVENTS = [
+    "session-started",
+    "transcript-partial",
+    "transcript-final",
+    "session-stopped",
+    "session-error",
+    "transcript-corrected",
+] as const;
+
+function clearSocketListeners(socket: Socket): void {
+    SOCKET_EVENTS.forEach((event) => socket.off(event));
+}
 
 export function useRealtimeRecorder(): RealtimeRecorderReturn {
     const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -20,17 +34,44 @@ export function useRealtimeRecorder(): RealtimeRecorderReturn {
     const isRecordingRef = useRef<boolean>(false);
     const sessionIdRef = useRef<string | null>(null);
 
+    const cleanupLocalAudio = useCallback((): void => {
+        if (workletRef.current) {
+            workletRef.current.port.onmessage = null;
+            workletRef.current.disconnect();
+            workletRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+            void audioContextRef.current.close();
+            audioContextRef.current = null;
+        }
+
+        if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+            streamRef.current = null;
+        }
+    }, []);
+
+    const teardownSocket = useCallback((emitStopSession: boolean): void => {
+        const socket = getExistingSocket();
+        if (!socket) return;
+
+        if (emitStopSession && socket.connected) {
+            socket.emit("stop-session");
+        }
+
+        clearSocketListeners(socket);
+        disconnectSocket();
+    }, []);
+
     useEffect(() => {
         return () => {
-            const s = getSocket();
-            s.off("session-started");
-            s.off("transcript-partial");
-            s.off("transcript-final");
-            s.off("session-stopped");
-            s.off("session-error");
-            s.off("transcript-corrected");
+            const shouldStopSession = isRecordingRef.current || Boolean(sessionIdRef.current);
+            isRecordingRef.current = false;
+            cleanupLocalAudio();
+            teardownSocket(shouldStopSession);
         };
-    }, []);
+    }, [cleanupLocalAudio, teardownSocket]);
 
     const startRecording = useCallback(async (): Promise<void> => {
         setError(null);
@@ -43,88 +84,98 @@ export function useRealtimeRecorder(): RealtimeRecorderReturn {
         sessionIdRef.current = null;
         isRecordingRef.current = true;
 
-        const s = getSocket();
-
-        // Force fresh connection each recording
-        if (s.connected) {
-            s.disconnect();
-            await new Promise<void>((r) => setTimeout(r, 200));
-        }
-
-        s.connect();
-        await new Promise<void>((resolve) => s.once("connect", resolve));
-
-        // Register socket listeners
-        s.off("session-started");
-        s.off("transcript-partial");
-        s.off("transcript-final");
-        s.off("session-stopped");
-        s.off("session-error");
-        s.off("transcript-corrected");
-
-        s.on("transcript-partial", ({ text, speaker }: { text: string; speaker: string | null }) => {
-            console.log("📝 Partial:", speaker, text);
-            setPartialText({ text, speaker: speaker ?? null });
-        });
-
-        s.on("transcript-final", ({ text, speaker, segments }: {
-            text: string;
-            speaker: string | null;
-            segments: Segment[];
-        }) => {
-            setFinalLines((prev) => [
-                ...prev,
-                {
-                    text,
-                    speaker: speaker ?? null,
-                    segments: segments ?? [],
-                },
-            ]);
-            setPartialText(null);
-        });
-
-        s.on("session-stopped", ({ transcript }: { transcript: string }) => {
-            setFullTranscript(transcript || "");
-            setIsDiarizing(true);
-        });
-
-        s.on("transcript-corrected", ({
-            segments,
-            transcript,
-            speakerCount,
-        }: CorrectedTranscript) => {
-            setCorrectedTranscript({ segments, transcript, speakerCount });
-            setIsDiarizing(false);
-        });
-
-        s.on("session-error", ({ message }: { message: string }) => {
-            setError(message);
-            setIsRecording(false);
-            setIsDiarizing(false);
-            isRecordingRef.current = false;
-        });
-
-        s.emit("start-session");
-
-        await new Promise<void>((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error("Gladia connection timeout — try again"));
-            }, 10_000);
-
-            s.once("session-started", ({ sessionId }: { sessionId: string }) => {
-                clearTimeout(timeout);
-                setSessionId(sessionId);
-                sessionIdRef.current = sessionId;
-                resolve(undefined);
-            });
-
-            s.once("session-error", ({ message }: { message: string }) => {
-                clearTimeout(timeout);
-                reject(new Error(message));
-            });
-        });
-
+        const socket = getSocket();
         try {
+            // Force fresh connection each recording
+            if (socket.connected) {
+                socket.disconnect();
+                await new Promise<void>((resolve) => setTimeout(resolve, 200));
+            }
+
+            socket.connect();
+            await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error("Socket connection timeout - please try again"));
+                }, 10_000);
+
+                socket.once("connect", () => {
+                    clearTimeout(timeout);
+                    resolve(undefined);
+                });
+
+                socket.once("connect_error", (connectError: Error) => {
+                    clearTimeout(timeout);
+                    reject(connectError);
+                });
+            });
+
+            clearSocketListeners(socket);
+
+            socket.on("transcript-partial", ({ text, speaker }: { text: string; speaker: string | null }) => {
+                setPartialText({ text, speaker: speaker ?? null });
+            });
+
+            socket.on("transcript-final", ({ text, speaker, segments }: {
+                text: string;
+                speaker: string | null;
+                segments: Segment[];
+            }) => {
+                setFinalLines((prev) => [
+                    ...prev,
+                    {
+                        text,
+                        speaker: speaker ?? null,
+                        segments: segments ?? [],
+                    },
+                ]);
+                setPartialText(null);
+            });
+
+            socket.on("session-stopped", ({ transcript }: { transcript: string }) => {
+                setFullTranscript(transcript || "");
+                setIsDiarizing(true);
+                setIsRecording(false);
+            });
+
+            socket.on("transcript-corrected", ({
+                segments,
+                transcript,
+                speakerCount,
+            }: CorrectedTranscript) => {
+                setCorrectedTranscript({ segments, transcript, speakerCount });
+                setIsDiarizing(false);
+                teardownSocket(false);
+            });
+
+            socket.on("session-error", ({ message }: { message: string }) => {
+                setError(message);
+                setIsRecording(false);
+                setIsDiarizing(false);
+                isRecordingRef.current = false;
+                cleanupLocalAudio();
+                teardownSocket(true);
+            });
+
+            socket.emit("start-session");
+
+            await new Promise<void>((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error("Deepgram connection timeout - please try again"));
+                }, 10_000);
+
+                socket.once("session-started", ({ sessionId }: { sessionId: string }) => {
+                    clearTimeout(timeout);
+                    setSessionId(sessionId);
+                    sessionIdRef.current = sessionId;
+                    resolve(undefined);
+                });
+
+                socket.once("session-error", ({ message }: { message: string }) => {
+                    clearTimeout(timeout);
+                    reject(new Error(message));
+                });
+            });
+
             const stream = await navigator.mediaDevices.getUserMedia({
                 audio: {
                     channelCount: 1,
@@ -152,10 +203,10 @@ export function useRealtimeRecorder(): RealtimeRecorderReturn {
 
             worklet.port.onmessage = (e: MessageEvent<ArrayBuffer>) => {
                 if (!isRecordingRef.current) return;
-                s.emit("audio-chunk", e.data);
+                socket.emit("audio-chunk", e.data);
                 chunkCount++;
-                if (chunkCount % 20 === 0) {
-                    console.log(`🎙 Sent ${chunkCount} chunks`);
+                if (chunkCount % 50 === 0) {
+                    console.log(`Sent ${chunkCount} PCM chunks`);
                 }
             };
 
@@ -164,7 +215,7 @@ export function useRealtimeRecorder(): RealtimeRecorderReturn {
 
             setIsRecording(true);
         } catch (err: unknown) {
-            const e = err as Error;
+            const e = err instanceof Error ? err : new Error("Microphone error");
             const msg = e.message || "Microphone error";
             setError(
                 e.name === "NotAllowedError"
@@ -172,32 +223,25 @@ export function useRealtimeRecorder(): RealtimeRecorderReturn {
                     : msg
             );
             isRecordingRef.current = false;
+            setIsRecording(false);
+            setIsDiarizing(false);
+            cleanupLocalAudio();
+            teardownSocket(true);
         }
-    }, []);
+    }, [cleanupLocalAudio, teardownSocket]);
 
     const stopRecording = useCallback(() => {
-        console.log("⏹ Stopping...");
+        console.log("Stopping recording...");
         isRecordingRef.current = false;
+        cleanupLocalAudio();
 
-        if (workletRef.current) {
-            workletRef.current.port.onmessage = null;
-            workletRef.current.disconnect();
-            workletRef.current = null;
+        const socket = getExistingSocket();
+        if (socket?.connected) {
+            socket.emit("stop-session");
         }
 
-        if (audioContextRef.current) {
-            audioContextRef.current.close();
-            audioContextRef.current = null;
-        }
-
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((t) => t.stop());
-            streamRef.current = null;
-        }
-
-        getSocket().emit("stop-session");
         setIsRecording(false);
-    }, []);
+    }, [cleanupLocalAudio]);
 
     return {
         isRecording,

@@ -9,6 +9,25 @@ export const stats = [
 ] as const;
 
 export const ACCEPTED_EXTENSIONS = [".mp3", ".wav", ".m4a", ".ogg", ".mp4", ".webm", ".flac", ".aac"];
+export const MAX_UPLOAD_SIZE_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
+export const ACCEPTED_MIME_TYPES = [
+    "audio/aac",
+    "audio/flac",
+    "audio/mp3",
+    "audio/mp4",
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/webm",
+    "audio/x-aac",
+    "audio/x-flac",
+    "audio/x-m4a",
+    "audio/x-wav",
+    "audio/x-pn-wav",
+    "audio/wave",
+    "video/mp4",
+    "video/webm",
+] as const;
 
 export const languageOptions: LanguageOption[] = [
     { code: "en", label: "English", flag: "🇺🇸" },
